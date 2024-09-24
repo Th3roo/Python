@@ -5,7 +5,7 @@ print("Random array: ")
 print(arr)
 
 new_arr = np.where(arr < 0, arr * 2, np.sqrt(np.abs(arr)))
-print("\nNumber<0 multiplied by 2 and other thing: ")
+print("\nNumber<0 multiplied by 2: ")
 print(new_arr)
 
 mask = new_arr < 0
