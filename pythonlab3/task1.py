@@ -3,7 +3,6 @@ k = int(input("Кол-во стран: "))
 
 countries = {}
 
-# Ввод стран и городов
 for i in range(k):
     data = input(f"{i+1} страна: ").split()
     country = data[0]

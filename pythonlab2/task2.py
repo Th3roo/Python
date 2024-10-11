@@ -1,6 +1,5 @@
 import math
 
- 
 number = float(input("Введите число: "))
 
 if number == 0:
@@ -10,4 +9,4 @@ else:
     
     mantissa = number / (10 ** exponent)
     
-    print(f"Формат плавающей точки: x = {mantissa:.1f} * 10 ** {exponent}")
+    print(f"Формат плавающей точки: x = {mantissa}*10^{exponent}")

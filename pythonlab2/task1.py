@@ -1,29 +1,34 @@
-import numpy as np
+import random
+import math
 
-arr = np.random.uniform(-20, 20, size=20)
-print("Random array: ")
-print(arr)
+original_list = [random.randint(-20, 20) for _ in range(20)]
+print("Исходный список:", original_list)
+print()
 
-new_arr = np.where(arr < 0, arr * 2, np.sqrt(np.abs(arr)))
-print("\nNumber<0 multiplied by 2: ")
-print(new_arr)
+modified_list = [x * 2 if x < 0 else (math.sqrt(x) if x > 0 else 0) for x in original_list]
+print("Модифицированный список:", modified_list)
+print()
 
-mask = new_arr < 0
-indices = np.where(mask)[0]
-result = np.insert(new_arr, indices, 0)
-print("\nInsert zero's: ")
-print(result)
+i = 0
+while i < len(modified_list):
+    if modified_list[i] < 0:
+        modified_list.insert(i, 0)
+        i += 2
+    else:
+        i += 1
+print("Список с нулями перед отрицательными элементами:", modified_list)
+print()
 
-K = float(input("Enter K to remove: "))
-result = result[result != K]
-print("\nArray with K removed: ", K)
-print(result)
+K = int(input("Введите значение K для удаления: "))
+while K in modified_list:
+    modified_list.remove(K)
+print(f"Список после удаления элементов со значением {K}:", modified_list)
+print()
 
-Z = float(input("Enter Z to append: "))
-result = np.concatenate(([0, 0, 0], result, [Z, Z, Z]))
-print("\nNew array:")
-print(result)
+Z = int(input("Введите значение Z для добавления в конец: "))
+modified_list = [0, 0, 0] + modified_list + [Z, Z, Z]
+print("Расширенный список:", modified_list)
+print()
 
-result = np.sort(result)
-print("\nSorted array:")
-print(result)
+sorted_list = sorted(modified_list)
+print("Отсортированный список:", sorted_list)
