@@ -2,16 +2,18 @@ import tkinter as tk
 from tkinter import messagebox
 from tkinter import ttk
 import datetime
+import csv
 
-EVENTS_FILE = "pythonlab6/events.txt"
+EVENTS_FILE = "pythonlab6/events.csv"
 
 def read_events():
     events = []
     try:
         with open(EVENTS_FILE, 'r', encoding='utf-8') as file:
-            for line in file:
-                if line.strip():
-                    name, date_str = line.strip().split(', ')
+            reader = csv.reader(file)
+            for row in reader:
+                if row:
+                    name, date_str = row
                     date_obj = datetime.datetime.strptime(date_str, "%d/%m/%Y")
                     events.append((name, date_obj))
     except FileNotFoundError:
@@ -19,8 +21,9 @@ def read_events():
     return events
 
 def add_event_to_file(name, date_str):
-    with open(EVENTS_FILE, 'a', encoding='utf-8') as file:
-        file.write(f"{name}, {date_str}\n")
+    with open(EVENTS_FILE, 'a', encoding='utf-8', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow([name, date_str])
 
 def main_window():
     window = tk.Tk()
