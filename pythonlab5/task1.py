@@ -1,56 +1,101 @@
-import tkinter as tk
-import random
+class Child:
+    def __init__(self, name, age):
+        self.name = name
+        self.age = age
+        self.is_calm = True
+        self.is_fed = True
 
-class MathQuizApp:
-    def __init__(self, root):
-        self.root = root
-        self.root.title("Тест по математике")
-        
-        self.questions = self.generate_questions()
-        self.entries = []  # Список для полей ввода
-        self.labels = []   # Список для с вопросами
-        
-        self.create_widgets()
-    
-    def generate_questions(self):
-        questions = []
-        for _ in range(5):
-            num1 = random.randint(1, 10)
-            num2 = random.randint(1, 10)
-            operation = random.choice(['+', '*'])
-            question = f"{num1} {operation} {num2}"
-            answer = eval(question)  # Вычисляем правильный ответ
-            questions.append((question, answer))
-        return questions
-    
-    def create_widgets(self):
-        for i, (question, _) in enumerate(self.questions):
-            label = tk.Label(self.root, text=f"{question} = ")
-            label.grid(row=i, column=0, padx=10, pady=5)
-            self.labels.append(label)
-            
-            entry = tk.Entry(self.root)
-            entry.grid(row=i, column=1, padx=10, pady=5)
-            self.entries.append(entry)
-        
-        check_btn = tk.Button(self.root, text="Проверка", command=self.check_answers)
-        check_btn.grid(row=5, column=0, columnspan=2, pady=10)
-    
-    def check_answers(self):
-        correct_count = 0
-        for i, (_, correct_answer) in enumerate(self.questions):
-            user_answer = self.entries[i].get()
-            
-            if user_answer.isdigit() and int(user_answer) == correct_answer:
-                self.entries[i].config(bg="green")  # Если правильно, выделяем зеленым
-                correct_count += 1
+    def __str__(self):
+        return f"Child: {self.name}, Age: {self.age}, Calm: {'Yes' if self.is_calm else 'No'}, Fed: {'Yes' if self.is_fed else 'No'}"
+
+class Parent:
+    def __init__(self, name, age):
+        self.name = name
+        self.age = age
+        self.children = []
+
+    def add_child(self, child):
+        self.children.append(child)
+
+    def info(self):
+        return f"Parent: {self.name}, Age: {self.age}, Number of children: {len(self.children)}"
+
+    def calm_child(self, index):
+        if 0 <= index < len(self.children):
+            self.children[index].is_calm = True
+            print(f"{self.name} calmed {self.children[index].name}")
+        else:
+            print("Invalid child index")
+
+    def feed_child(self, index):
+        if 0 <= index < len(self.children):
+            self.children[index].is_fed = True
+            print(f"{self.name} fed {self.children[index].name}")
+        else:
+            print("Invalid child index")
+
+def main():
+    parents = []
+    n = int(input("Введите количество родителей: "))
+
+    for i in range(n):
+        name = input(f"Введите имя родителя {i+1}: ")
+        age = int(input(f"Введите возраст родителя {i+1}: "))
+        parent = Parent(name, age)
+
+        num_children = int(input(f"Введите количество детей для родителя {name}: "))
+        for j in range(num_children):
+            child_name = input(f"Введите имя ребенка {j+1}: ")
+            child_age = int(input(f"Введите возраст ребенка {j+1}: "))
+            child = Child(child_name, child_age)
+            parent.add_child(child)
+
+        parents.append(parent)
+
+    while True:
+        print("\nМеню:")
+        print("1. Информация о родителе")
+        print("2. Информация о детях родителя")
+        print("3. Выполнить действие с ребенком")
+        print("4. Выход")
+
+        choice = int(input("Выберите действие: "))
+
+        if choice == 1:
+            k = int(input("Введите номер родителя: "))
+            if 0 <= k < len(parents):
+                print(parents[k].info())
             else:
-                self.entries[i].config(bg="red")  # Если неправильно, выделяем красным
-        
-        result_label = tk.Label(self.root, text=f"Правильных ответов: {correct_count}/5")
-        result_label.grid(row=6, column=0, columnspan=2, pady=10)
+                print("Неверный номер родителя")
+
+        elif choice == 2:
+            k = int(input("Введите номер родителя: "))
+            if 0 <= k < len(parents):
+                for i, child in enumerate(parents[k].children):
+                    print(f"{i+1}. {child}")
+            else:
+                print("Неверный номер родителя")
+
+        elif choice == 3:
+            k = int(input("Введите номер родителя: "))
+            if 0 <= k < len(parents):
+                child_index = int(input("Введите номер ребенка: "))
+                action = input("Введите действие (успокоить/покормить): ").lower()
+                if action == "успокоить":
+                    parents[k].calm_child(child_index - 1)
+                elif action == "покормить":
+                    parents[k].feed_child(child_index - 1)
+                else:
+                    print("Неверное действие")
+            else:
+                print("Неверный номер родителя")
+
+        elif choice == 4:
+            print("Выход из программы")
+            break
+
+        else:
+            print("Неверный выбор")
 
 if __name__ == "__main__":
-    root = tk.Tk()
-    app = MathQuizApp(root)
-    root.mainloop()
+    main()
