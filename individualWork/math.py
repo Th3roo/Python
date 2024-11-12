@@ -8,81 +8,142 @@ from PyQt5.QtCore import QSettings, QRegExp
 from PyQt5.QtGui import QIntValidator, QRegExpValidator, QKeySequence
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 
+class TabNames:
+    QUAD = "quad"
+    GRAPH = "graph"
+    INTERSECTION = "intersection"
+    CONVERT = "convert"
+
+    @classmethod
+    def get_display_names(cls):
+        return {
+            cls.QUAD: "Квадратное уравнение",
+            cls.GRAPH: "График функции",
+            cls.INTERSECTION: "Пересечение функций",
+            cls.CONVERT: "Перевод систем счисления"
+        }
+
 class MathApp(QMainWindow):
     def __init__(self):
         super().__init__()
+        self.settings = QSettings('MyCompany', 'MathApp')
+        self.setup_ui_components()
+        self._setup_shortcuts()
+        self._load_settings()
+
+    def setup_ui_components(self):
+        self._setup_window()
+        self._setup_tabs()
+        self._setup_status_bar()
+
+    def _setup_window(self):
         self.setWindowTitle("Математическое приложение")
         self.setGeometry(100, 100, 800, 600)
 
+    def _setup_tabs(self):
         self.tabs = QTabWidget()
         self.setCentralWidget(self.tabs)
+        self.tab_widgets = self._create_tab_widgets()
+        self._add_tabs_to_widget()
+        self._setup_all_tabs()
 
-        self.quad_tab = QWidget()
-        self.graph_tab = QWidget()
-        self.intersection_tab = QWidget()
-        self.convert_tab = QWidget()
+    def _create_tab_widgets(self):
+        return {name: QWidget() for name in TabNames.get_display_names().keys()}
 
-        self.tabs.addTab(self.quad_tab, "Квадратное уравнение")
-        self.tabs.addTab(self.graph_tab, "График функции")
-        self.tabs.addTab(self.intersection_tab, "Пересечение функций")
-        self.tabs.addTab(self.convert_tab, "Перевод систем счисления")
+    def _add_tabs_to_widget(self):
+        for key, name in TabNames.get_display_names().items():
+            self.tabs.addTab(self.tab_widgets[key], name)
 
-        self.setup_quad_tab()
-        self.setup_graph_tab()
-        self.setup_intersection_tab()
-        self.setup_convert_tab()
-
-        self.settings = QSettings('MathApp', 'Settings')
-        self.load_settings()
-
+    def _setup_status_bar(self):
         self.statusBar = self.statusBar()
         self.statusBar.showMessage('Готов к работе')
 
-        # Добавляем горячие клавиши
-        QShortcut(QKeySequence("Ctrl+Q"), self, self.close)
-        QShortcut(QKeySequence("Ctrl+W"), self, self.clear_quad_inputs)
-        QShortcut(QKeySequence("Ctrl+1"), self, lambda: self.tabs.setCurrentIndex(0))
-        QShortcut(QKeySequence("Ctrl+2"), self, lambda: self.tabs.setCurrentIndex(1))
-        QShortcut(QKeySequence("Ctrl+3"), self, lambda: self.tabs.setCurrentIndex(2))
-        QShortcut(QKeySequence("Ctrl+4"), self, lambda: self.tabs.setCurrentIndex(3))
+    def _setup_all_tabs(self):
+        setup_methods = {
+            "quad": self._setup_quad_tab,
+            "graph": self._setup_graph_tab,
+            "intersection": self._setup_intersection_tab,
+            "convert": self._setup_convert_tab
+        }
+        
+        for key, method in setup_methods.items():
+            method(self.tab_widgets[key])
 
-    def setup_quad_tab(self):
+    def _setup_shortcuts(self):
+        shortcuts = {
+            "Ctrl+Q": self.close,
+            "Ctrl+W": self.clear_quad_inputs,
+            **{f"Ctrl+{i+1}": lambda i=i: self.tabs.setCurrentIndex(i) 
+               for i in range(len(TabNames.get_display_names()))}
+        }
+        
+        for key, func in shortcuts.items():
+            QShortcut(QKeySequence(key), self, func)
+
+    def _setup_quad_tab(self, tab):
         layout = QVBoxLayout()
-
-        self.a_input = QLineEdit()
-        self.a_input.setPlaceholderText("Введите коэффициент a")
-        self.a_input.setStatusTip('Введите коэффициент при x²')
-        self.b_input = QLineEdit()
-        self.b_input.setPlaceholderText("Введите коэффициент b")
-        self.b_input.setStatusTip('Введите коэффициент при x')
-        self.c_input = QLineEdit()
-        self.c_input.setPlaceholderText("Введите коэффициент c")
-        self.c_input.setStatusTip('Введите свободный член')
-
-        solve_button = QPushButton("Решить")
-        solve_button.clicked.connect(self.solve_quadratic)
-
-        clear_button = QPushButton("Очистить")
-        clear_button.clicked.connect(self.clear_quad_inputs)
-
+        
+        # Создаем словарь для input полей
+        self.quad_inputs = {
+            'a': self._create_input("Введите коэффициент a", 'Введите коэффициент при x²'),
+            'b': self._create_input("Введите коэффициент b", 'Введите коэффициент при x'),
+            'c': self._create_input("Введите коэффициент c", 'Введите свободный член')
+        }
+        
+        buttons = {
+            "Решить": self.solve_quadratic,
+            "Очистить": self.clear_quad_inputs
+        }
+        
+        for input_field in self.quad_inputs.values():
+            layout.addWidget(input_field)
+            
+        for text, func in buttons.items():
+            button = QPushButton(text)
+            button.clicked.connect(func)
+            layout.addWidget(button)
+            
         self.quad_result = QLabel("")
-
-        layout.addWidget(self.a_input)
-        layout.addWidget(self.b_input)
-        layout.addWidget(self.c_input)
-        layout.addWidget(solve_button)
-        layout.addWidget(clear_button)
         layout.addWidget(self.quad_result)
+        
+        tab.setLayout(layout)
 
-        self.quad_tab.setLayout(layout)
+    def _create_input(self, placeholder, status_tip):
+        input_field = QLineEdit()
+        input_field.setPlaceholderText(placeholder)
+        input_field.setStatusTip(status_tip)
+        return input_field
+
+    def solve_quadratic(self):
+        try:
+            coeffs = {key: float(input_field.text()) 
+                     for key, input_field in self.quad_inputs.items()}
+            
+            discriminant = coeffs['b']**2 - 4*coeffs['a']*coeffs['c']
+            
+            if discriminant > 0:
+                x1 = (-coeffs['b'] + np.sqrt(discriminant)) / (2*coeffs['a'])
+                x2 = (-coeffs['b'] - np.sqrt(discriminant)) / (2*coeffs['a'])
+                result = f"Корни: x1 = {x1:.2f}, x2 = {x2:.2f}"
+            elif discriminant == 0:
+                x = -coeffs['b'] / (2*coeffs['a'])
+                result = f"Один корень: x = {x:.2f}"
+            else:
+                result = "Нет действительных корней"
+                
+            self.quad_result.setText(result)
+        except ValueError:
+            self._show_error("Введите корректные числовые значения")
+
+    def _show_error(self, message):
+        QMessageBox.critical(self, "Ошибка", message)
 
     def clear_quad_inputs(self):
-        self.a_input.clear()
-        self.b_input.clear()
-        self.c_input.clear()
+        for input_field in self.quad_inputs.values():
+            input_field.clear()
         self.quad_result.clear()    
 
-    def setup_graph_tab(self):
+    def _setup_graph_tab(self, tab):
         layout = QVBoxLayout()
 
         self.func_input = QLineEdit()
@@ -92,17 +153,16 @@ class MathApp(QMainWindow):
         plot_button.clicked.connect(self.plot_function)
 
         self.graph_canvas = FigureCanvas(plt.figure())
-        # Создаем панель инструментов один раз при инициализации
         self.toolbar = NavigationToolbar(self.graph_canvas, self)
 
         layout.addWidget(self.func_input)
         layout.addWidget(plot_button)
-        layout.addWidget(self.toolbar)  # Добавляем панель инструментов
+        layout.addWidget(self.toolbar)
         layout.addWidget(self.graph_canvas)
 
-        self.graph_tab.setLayout(layout)
+        tab.setLayout(layout)
 
-    def setup_intersection_tab(self):
+    def _setup_intersection_tab(self, tab):
         layout = QVBoxLayout()
 
         self.func1_input = QLineEdit()
@@ -117,16 +177,20 @@ class MathApp(QMainWindow):
 
         # Создаем отдельный холст для вкладки пересечения
         self.intersection_canvas = FigureCanvas(plt.figure())
+        # Добавляем панель инструментов для управления графиком
+        self.intersection_toolbar = NavigationToolbar(self.intersection_canvas, self)
 
         layout.addWidget(self.func1_input)
         layout.addWidget(self.func2_input)
         layout.addWidget(intersection_button)
         layout.addWidget(self.intersection_result)
+        # Добавляем toolbar перед canvas
+        layout.addWidget(self.intersection_toolbar)
         layout.addWidget(self.intersection_canvas)
 
-        self.intersection_tab.setLayout(layout)
+        tab.setLayout(layout)
 
-    def setup_convert_tab(self):
+    def _setup_convert_tab(self, tab):
         layout = QVBoxLayout()
 
         self.number_input = QLineEdit()
@@ -152,93 +216,83 @@ class MathApp(QMainWindow):
         layout.addWidget(convert_button)
         layout.addWidget(self.convert_result)
 
-        self.convert_tab.setLayout(layout)
+        tab.setLayout(layout)
 
-    def solve_quadratic(self):
-        try:
-            a = float(self.a_input.text())
-            b = float(self.b_input.text())
-            c = float(self.c_input.text())
-            discriminant = b**2 - 4*a*c
-
-            if discriminant > 0:
-                x1 = (-b + np.sqrt(discriminant)) / (2*a)
-                x2 = (-b - np.sqrt(discriminant)) / (2*a)
-                self.quad_result.setText(f"Корни: x1 = {x1:.2f}, x2 = {x2:.2f}")
-            elif discriminant == 0:
-                x = -b / (2*a)
-                self.quad_result.setText(f"Один корень: x = {x:.2f}")
-            else:
-                self.quad_result.setText("Нет действительных корней")
-        except ValueError:
-            QMessageBox.critical(self, "Ошибка", "Введите корректные числовые значения")
+    def _setup_common_plot(self, ax, title):
+        ax.clear()
+        ax.axhline(0, color='black', linewidth=0.5)
+        ax.axvline(0, color='black', linewidth=0.5)
+        ax.grid(True)
+        ax.set_xlabel('x')
+        ax.set_ylabel('y')
+        ax.set_title(title)
+        # Устанавливаем одинаковые пределы для обоих графиков
+        ax.set_xlim(-10, 10)
+        ax.set_ylim(-10, 10)
 
     def plot_function(self):
         try:
-            func_str = self.func_input.text()
-            x = symbols('x')
-            func = sympify(func_str)
-
-            x_vals = np.linspace(-10, 10, 1000)
-            y_vals = [func.subs(x, val) for val in x_vals]
-
-            # Очищаем фигуру полностью перед построением нового графика
-            self.graph_canvas.figure.clear()
-            
-            # Создаем новые оси с фиксированным размером
-            ax = self.graph_canvas.figure.add_subplot(111)
-            ax.plot(x_vals, y_vals)
-            ax.axhline(0, color='black', linewidth=0.5)
-            ax.axvline(0, color='black', linewidth=0.5)
-            ax.grid(True)
-            ax.set_xlabel('x')
-            ax.set_ylabel('y')
-            ax.set_title(f"График функции: {func_str}")
-            
-            # Устанавливаем фиксированные отступы
-            self.graph_canvas.figure.subplots_adjust(left=0.1, right=0.9, top=0.9, bottom=0.1)
-            
-            self.graph_canvas.draw()
+            self._plot_function_internal()
         except Exception as e:
-            QMessageBox.critical(self, "Ошибка", f"Не удалось построить график: {e}")
+            self._show_error(f"Не удалось построить график: {e}")
+
+    def _plot_function_internal(self):
+        func_str = self.func_input.text()
+        x = symbols('x')
+        func = sympify(func_str)
+        
+        x_vals, y_vals = self._calculate_function_values(func, x)
+        self._draw_function_plot(x_vals, y_vals, func_str)
+
+    def _calculate_function_values(self, func, x, points=1000):
+        x_vals = np.linspace(-10, 10, points)
+        y_vals = [func.subs(x, val) for val in x_vals]
+        return x_vals, y_vals
+
+    def _draw_function_plot(self, x_vals, y_vals, func_str):
+        self.graph_canvas.figure.clear()
+        ax = self.graph_canvas.figure.add_subplot(111)
+        
+        self._setup_common_plot(ax, f"График функции: {func_str}")
+        ax.plot(x_vals, y_vals)
+        
+        self._adjust_and_draw_plot(self.graph_canvas)
+
+    def _adjust_and_draw_plot(self, canvas):
+        canvas.figure.subplots_adjust(left=0.1, right=0.9, top=0.9, bottom=0.1)
+        canvas.draw()
 
     def find_intersection(self):
         try:
             func1_str = self.func1_input.text()
             func2_str = self.func2_input.text()
-            
-            # Заменяем текстовую запись 3x на 3*x
-            func1_str = func1_str.replace('x', '*x')
-            func2_str = func2_str.replace('x', '*x')
 
             x = symbols('x')
             func1 = sympify(func1_str)
             func2 = sympify(func2_str)
             intersections = solve(func1 - func2)
             
-            # Фильтруем только действительные корни
             real_intersections = [point for point in intersections if point.is_real]
 
             x_vals = np.linspace(-10, 10, 1000)
             y1_vals = [float(func1.subs(x, val)) for val in x_vals]
             y2_vals = [float(func2.subs(x, val)) for val in x_vals]
 
-            ax = self.intersection_canvas.figure.subplots()
-            ax.clear()
+            self.intersection_canvas.figure.clear()
+            ax = self.intersection_canvas.figure.add_subplot(111)
+            
+            self._setup_common_plot(ax, "Пересечение функций")
             ax.plot(x_vals, y1_vals, label=func1_str)
             ax.plot(x_vals, y2_vals, label=func2_str)
-            ax.axhline(0, color='black', linewidth=0.5)
-            ax.axvline(0, color='black', linewidth=0.5)
-            ax.grid(True)
             ax.legend()
             
             if real_intersections:
                 for point in real_intersections:
                     point_float = float(point)
                     y_val = float(func1.subs(x, point_float))
-                    ax.plot(point_float, y_val, 'ro', label=f'({point_float:.2f}, {y_val:.2f})')
+                    ax.plot(point_float, y_val, 'ro')
 
-            ax.set_title("Пересечение функций")
+            self.intersection_canvas.figure.subplots_adjust(left=0.1, right=0.9, top=0.9, bottom=0.1)
             self.intersection_canvas.draw()
 
             if real_intersections:
@@ -254,27 +308,40 @@ class MathApp(QMainWindow):
 
     def convert_base(self):
         try:
-            number = self.number_input.text()
-            from_base = int(self.from_base_input.text())
-            to_base = int(self.to_base_input.text())
-
-            if 2 <= from_base <= 16 and 2 <= to_base <= 16:
-                decimal = int(number, from_base)
-                result = ""
-                while decimal > 0:
-                    remainder = decimal % to_base
-                    if remainder < 10:
-                        result = str(remainder) + result
-                    else:
-                        result = chr(ord('A') + remainder - 10) + result
-                    decimal //= to_base
-                self.convert_result.setText(f"Результат: {result}")
-            else:
-                QMessageBox.critical(self, "Ошибка", "Основание должно быть от 2 до 16")
+            self._validate_and_convert_base()
         except ValueError:
-            QMessageBox.critical(self, "Ошибка", "Введите корректные значения")
+            self._show_error("Введите корректные значения")
 
-    def load_settings(self):
+    def _validate_and_convert_base(self):
+        number = self.number_input.text()
+        from_base = int(self.from_base_input.text())
+        to_base = int(self.to_base_input.text())
+
+        if not self._are_bases_valid(from_base, to_base):
+            raise ValueError("Неверное основание системы счисления")
+
+        result = self._convert_number(number, from_base, to_base)
+        self.convert_result.setText(f"Результат: {result}")
+
+    def _are_bases_valid(self, from_base, to_base):
+        return 2 <= from_base <= 16 and 2 <= to_base <= 16
+
+    def _convert_number(self, number, from_base, to_base):
+        decimal = int(number, from_base)
+        if decimal == 0:
+            return "0"
+            
+        result = ""
+        while decimal > 0:
+            remainder = decimal % to_base
+            result = self._get_digit_char(remainder) + result
+            decimal //= to_base
+        return result
+
+    def _get_digit_char(self, digit):
+        return str(digit) if digit < 10 else chr(ord('A') + digit - 10)
+
+    def _load_settings(self):
         self.func_input.setText(self.settings.value('last_function', ''))
         self.func1_input.setText(self.settings.value('last_function1', ''))
         self.func2_input.setText(self.settings.value('last_function2', ''))
