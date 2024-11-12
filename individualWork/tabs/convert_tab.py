@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QVBoxLayout, QLineEdit, QPushButton, QLabel, QMessageBox
+from PyQt5.QtWidgets import QVBoxLayout, QHBoxLayout, QLineEdit, QPushButton, QLabel, QMessageBox
 from PyQt5.QtCore import QRegExp
 from PyQt5.QtGui import QIntValidator, QRegExpValidator
 
@@ -25,15 +25,23 @@ class ConvertTab:
         self.from_base_input.setValidator(QIntValidator(2, 16))
         self.to_base_input.setValidator(QIntValidator(2, 16))
 
+        # Создаем горизонтальный layout для кнопок
+        button_layout = QHBoxLayout()
+        
         convert_button = QPushButton("Конвертировать")
         convert_button.clicked.connect(self.convert_base)
+        clear_button = QPushButton("Очистить")
+        clear_button.clicked.connect(self.clear_inputs)
+        
+        button_layout.addWidget(convert_button)
+        button_layout.addWidget(clear_button)
 
         self.convert_result = QLabel("")
 
         layout.addWidget(self.number_input)
         layout.addWidget(self.from_base_input)
         layout.addWidget(self.to_base_input)
-        layout.addWidget(convert_button)
+        layout.addLayout(button_layout)
         layout.addWidget(self.convert_result)
 
         tab.setLayout(layout)
@@ -74,4 +82,24 @@ class ConvertTab:
         return str(digit) if digit < 10 else chr(ord('A') + digit - 10)
 
     def _show_error(self, message):
-        QMessageBox.critical(self.parent, "Ошибка", message) 
+        QMessageBox.critical(self.parent, "Ошибка", message)
+
+    def get_values(self):
+        """Получить текущие значения полей ввода"""
+        return (
+            self.number_input.text(),
+            self.from_base_input.text(),
+            self.to_base_input.text()
+        )
+
+    def set_values(self, number, from_base, to_base):
+        """Установить значения полей ввода"""
+        self.number_input.setText(number)
+        self.from_base_input.setText(from_base)
+        self.to_base_input.setText(to_base)
+
+    def clear_inputs(self):
+        self.number_input.clear()
+        self.from_base_input.clear()
+        self.to_base_input.clear()
+        self.convert_result.clear()

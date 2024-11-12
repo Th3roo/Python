@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QVBoxLayout, QLineEdit, QPushButton, QMessageBox
+from PyQt5.QtWidgets import QVBoxLayout, QHBoxLayout, QLineEdit, QPushButton, QLabel, QMessageBox
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg, NavigationToolbar2QT
 from sympy import symbols, sympify
@@ -8,8 +8,11 @@ class GraphTab:
     def __init__(self, parent):
         self.parent = parent
         self.func_input = None
-        self.graph_canvas = None
-        self.toolbar = None
+        
+        # Инициализация canvas и toolbar
+        figure = plt.figure()
+        self.graph_canvas = FigureCanvasQTAgg(figure)
+        self.toolbar = NavigationToolbar2QT(self.graph_canvas, parent)
         
     def setup(self, tab):
         layout = QVBoxLayout()
@@ -17,14 +20,18 @@ class GraphTab:
         self.func_input = QLineEdit()
         self.func_input.setPlaceholderText("Введите функцию (например, x**2 + 2*x + 1)")
 
+        button_layout = QHBoxLayout()
+        
         plot_button = QPushButton("Построить график")
         plot_button.clicked.connect(self.plot_function)
-
-        self.graph_canvas = FigureCanvasQTAgg(plt.figure())
-        self.toolbar = NavigationToolbar2QT(self.graph_canvas, self.parent)
+        clear_button = QPushButton("Очистить")
+        clear_button.clicked.connect(self.clear_inputs)
+        
+        button_layout.addWidget(plot_button)
+        button_layout.addWidget(clear_button)
 
         layout.addWidget(self.func_input)
-        layout.addWidget(plot_button)
+        layout.addLayout(button_layout)
         layout.addWidget(self.toolbar)
         layout.addWidget(self.graph_canvas)
 
@@ -81,4 +88,9 @@ class GraphTab:
 
     def set_function_text(self, text):
         self.func_input.setText(text)
+
+    def clear_inputs(self):
+        self.func_input.clear()
+        self.graph_canvas.figure.clear()
+        self.graph_canvas.draw()
         

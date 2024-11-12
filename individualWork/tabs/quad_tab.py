@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QVBoxLayout, QLineEdit, QPushButton, QLabel, QMessageBox
+from PyQt5.QtWidgets import QVBoxLayout, QHBoxLayout, QLineEdit, QPushButton, QLabel, QMessageBox
 import numpy as np
 
 class QuadraticTab:
@@ -38,6 +38,7 @@ class QuadraticTab:
         input_field = QLineEdit()
         input_field.setPlaceholderText(placeholder)
         input_field.setStatusTip(status_tip)
+        input_field.setToolTip(status_tip)
         return input_field
 
     def solve_quadratic(self):

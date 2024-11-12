@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QVBoxLayout, QLineEdit, QPushButton, QLabel, QMessageBox
+from PyQt5.QtWidgets import QVBoxLayout, QHBoxLayout, QLineEdit, QPushButton, QLabel, QMessageBox
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg, NavigationToolbar2QT
 from sympy import symbols, solve, sympify
@@ -9,9 +9,12 @@ class IntersectionTab:
         self.parent = parent
         self.func1_input = None
         self.func2_input = None
-        self.intersection_result = None
-        self.intersection_canvas = None
-        self.intersection_toolbar = None
+        self.intersection_result = QLabel("")
+        
+        # Инициализация canvas и toolbar
+        figure = plt.figure()
+        self.intersection_canvas = FigureCanvasQTAgg(figure)
+        self.intersection_toolbar = NavigationToolbar2QT(self.intersection_canvas, parent)
 
     def setup(self, tab):
         layout = QVBoxLayout()
@@ -21,17 +24,20 @@ class IntersectionTab:
         self.func2_input = QLineEdit()
         self.func2_input.setPlaceholderText("Введите функцию 2")
 
+        # Создаем горизонтальный layout для кнопок
+        button_layout = QHBoxLayout()
+        
         intersection_button = QPushButton("Найти пересечение")
         intersection_button.clicked.connect(self.find_intersection)
-
-        self.intersection_result = QLabel("")
-
-        self.intersection_canvas = FigureCanvasQTAgg(plt.figure())
-        self.intersection_toolbar = NavigationToolbar2QT(self.intersection_canvas, self.parent)
+        clear_button = QPushButton("Очистить")
+        clear_button.clicked.connect(self.clear_inputs)
+        
+        button_layout.addWidget(intersection_button)
+        button_layout.addWidget(clear_button)
 
         layout.addWidget(self.func1_input)
         layout.addWidget(self.func2_input)
-        layout.addWidget(intersection_button)
+        layout.addLayout(button_layout)
         layout.addWidget(self.intersection_result)
         layout.addWidget(self.intersection_toolbar)
         layout.addWidget(self.intersection_canvas)
@@ -101,4 +107,11 @@ class IntersectionTab:
 
     def set_functions_text(self, func1_text, func2_text):
         self.func1_input.setText(func1_text)
-        self.func2_input.setText(func2_text) 
+        self.func2_input.setText(func2_text)
+
+    def clear_inputs(self):
+        self.func1_input.clear()
+        self.func2_input.clear()
+        self.intersection_result.clear()
+        self.intersection_canvas.figure.clear()
+        self.intersection_canvas.draw()
