@@ -32,7 +32,6 @@ class MathApp(QMainWindow):
         self.setWindowTitle("Математическое приложение")
         self.setGeometry(100, 100, 800, 600)
         
-        # Добавить стили
         self.setStyleSheet("""
             QTabWidget::pane {
                 border: 1px solid #C2C7CB;
